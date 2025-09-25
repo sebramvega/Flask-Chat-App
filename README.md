@@ -22,6 +22,7 @@ Users can create or join rooms via short codes and chat live with other particip
 ---
 
 ## 📂 Project Structure
+```
 Flask-Chat-App/
 │
 ├── main.py # Flask app + Socket.IO events
@@ -32,7 +33,7 @@ Flask-Chat-App/
 ├── base.html # Shared layout
 ├── home.html # Lobby (join/create room)
 └── room.html # Chat room view
-
+```
 
 ---
 
@@ -45,7 +46,6 @@ cd Flask-Chat-App
 python -m venv venv
 source venv/bin/activate   # on Windows: venv\Scripts\activate
 ```
-
 
 ### 2. Install dependencies
 ```bash
@@ -66,7 +66,6 @@ eventlet>=0.36   # optional, recommended for production
 python main.py
 ```
 
-
 ### 4. Open the app
 Open http://127.0.0.1:5000
 - Tab 1 → Create a room.
@@ -79,8 +78,6 @@ Open http://127.0.0.1:5000
 | Lobby | Chat Room |
 |---|---|
 | <img src="docs/screenshot-home.png" alt="Lobby screenshot" width="430"> | <img src="docs/screenshot-room.png" alt="Chat room screenshot" width="430"> |
-
-
 
 ---
 
