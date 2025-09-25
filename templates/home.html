@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block content %}
+<!--
+  Lobby form:
+  - Enter a display name
+  - Join an existing room by code OR create a new room
+  - Server returns inline error messages for simple validation
+-->
+<form method="post" class="buttons">
+  <h3>Enter The Chat Room</h3>
+
+  <label>
+    <div class="muted">Name</div>
+    <input type="text" placeholder="Pick a name!" name="name" value="{{ name }}" />
+  </label>
+
+  <div class="join">
+    <input type="text" placeholder="Room Code" name="code" value="{{ code }}" />
+    <button type="submit" name="join">Join</button>
+  </div>
+
+  <button type="submit" name="create" class="create-btn">Create a Room</button>
+
+  {% if error %}
+    <div class="muted" role="alert">• {{ error }}</div>
+  {% endif %}
+</form>
+{% endblock %}

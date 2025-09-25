@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block content %}
+<!--
+  Chat room:
+  - Messages pane with sticky composer
+  - History + current user embedded as JSON to avoid Jinja inside JS
+-->
+<div class="message-box">
+  <h2>Chat Room: {{ code }}</h2>
+
+  <!-- Current user used for "me" bubble alignment -->
+  <div class="messages" id="messages" data-user='{{ (name or "")|tojson }}'></div>
+
+  <!-- Initial history: safe, parse-only JSON block -->
+  <script id="history" type="application/json">
+    {{ messages|tojson }}
+  </script>
+
+  <div class="inputs">
+    <input type="text" placeholder="Message" name="message" id="message" />
+    <button type="button" id="send-btn">Send</button>
+  </div>
+</div>
+
+<script>
+  // --- Client bootstrap ------------------------------------------------------
+  const socketio = io();
+  const messagesEl = document.getElementById("messages");
+  const inputEl = document.getElementById("message");
+  const sendBtn = document.getElementById("send-btn");
+
+  // Read server-provided bootstrap data without mixing Jinja into JS
+  const CURRENT_USER = JSON.parse(messagesEl.dataset.user || '""');
+  const HISTORY = JSON.parse(document.getElementById("history").textContent || "[]");
+
+  // Escape helper to prevent accidental HTML injection in message text
+  const esc = (s) => String(s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;").replace(/"/g,"&quot;")
+    .replace(/'/g,"&#39;");
+
+  // Render a single message bubble and autoscroll
+  const createMessage = (name, msg) => {
+    const who = name === CURRENT_USER ? "me" : (name === "System" ? "system" : "other");
+    const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+    const html = `
+      <div class="msg ${who}">
+        <div class="meta">${esc(name)} • <span class="muted">${time}</span></div>
+        <div class="bubble">${esc(msg)}</div>
+      </div>`;
+    messagesEl.insertAdjacentHTML("beforeend", html);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  };
+
+  // Initial history
+  HISTORY.forEach(m => createMessage(m.name, m.message));
+
+  // Live updates
+  socketio.on("message", (data) => createMessage(data.name, data.message));
+
+  // Send helpers
+  function sendMessage() {
+    const v = inputEl.value.trim();
+    if (!v) return;                 // ignore blank messages
+    socketio.emit("message", { data: v });
+    inputEl.value = "";
+    inputEl.focus();
+  }
+  inputEl.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  });
+  sendBtn.addEventListener("click", sendMessage);
+</script>
+{% endblock %}
