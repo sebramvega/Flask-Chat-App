@@ -1,4 +1,6 @@
 # Flask Chat App 💬
+[![CI](https://github.com/sebramvega/flask-chat-app/actions/workflows/ci.yml/badge.svg)](https://github.com/sebramvega/flask-chat-app/actions/workflows/ci.yml)
+
 
 A lightweight **real-time chat room application** built with [Flask](https://flask.palletsprojects.com/) and [Flask-SocketIO](https://flask-socketio.readthedocs.io/).  
 Users can create or join rooms via short codes and chat live with other participants.  
