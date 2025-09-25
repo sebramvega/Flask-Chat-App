@@ -3,12 +3,20 @@
 <!--
   Chat room:
   - Messages pane with sticky composer
-  - History + current user embedded as JSON to avoid Jinja inside JS
+  - Presence list + typing indicator
+  - Deep link copy + downloadable JSON log
 -->
 <div class="message-box">
-  <h2>Chat Room: {{ code }}</h2>
+  <h2>
+    Chat Room: {{ code }}
+    <button id="copy-link" class="mini-btn" title="Copy join link">Copy link</button>
+  </h2>
 
-  <!-- Current user used for "me" bubble alignment -->
+  <!-- Presence + Typing indicators -->
+  <div class="muted" id="presence"></div>
+  <div class="muted" id="typing"></div>
+
+  <!-- Current user for "me" bubble alignment -->
   <div class="messages" id="messages" data-user='{{ (name or "")|tojson }}'></div>
 
   <!-- Initial history: safe, parse-only JSON block -->
@@ -19,6 +27,7 @@
   <div class="inputs">
     <input type="text" placeholder="Message" name="message" id="message" />
     <button type="button" id="send-btn">Send</button>
+    <button type="button" id="download-log">Download Log</button>
   </div>
 </div>
 
@@ -28,10 +37,14 @@
   const messagesEl = document.getElementById("messages");
   const inputEl = document.getElementById("message");
   const sendBtn = document.getElementById("send-btn");
+  const presenceEl = document.getElementById("presence");
+  const typingEl = document.getElementById("typing");
+  const copyBtn = document.getElementById("copy-link");
+  const downloadBtn = document.getElementById("download-log");
 
-  // Read server-provided bootstrap data without mixing Jinja into JS
   const CURRENT_USER = JSON.parse(messagesEl.dataset.user || '""');
   const HISTORY = JSON.parse(document.getElementById("history").textContent || "[]");
+  const ALL = [...HISTORY]; // running log (history + live)
 
   // Escape helper to prevent accidental HTML injection in message text
   const esc = (s) => String(s)
@@ -56,19 +69,67 @@
   HISTORY.forEach(m => createMessage(m.name, m.message));
 
   // Live updates
-  socketio.on("message", (data) => createMessage(data.name, data.message));
+  socketio.on("message", (data) => {
+    ALL.push(data);
+    createMessage(data.name, data.message);
+    typingEl.textContent = "";
+  });
 
-  // Send helpers
+  // Presence list
+  socketio.on("presence", (data) => {
+    const who = data.users.map(u => `<code>${esc(u)}</code>`).join(" ");
+    presenceEl.innerHTML = `Online (${data.count}): ${who || '—'}`;
+  });
+
+  // Typing indicator
+  socketio.on("typing", (data) => {
+    typingEl.textContent = `${data.name} is typing…`;
+    clearTimeout(window.__typingTimer);
+    window.__typingTimer = setTimeout(() => typingEl.textContent = "", 1200);
+  });
+
+  // Send helpers + simple client cooldown
+  let blocked = false;
   function sendMessage() {
+    if (blocked) return;
     const v = inputEl.value.trim();
-    if (!v) return;                 // ignore blank messages
+    if (!v) return;
+    blocked = true;
     socketio.emit("message", { data: v });
     inputEl.value = "";
     inputEl.focus();
+    setTimeout(() => blocked = false, 500);
   }
   inputEl.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   });
   sendBtn.addEventListener("click", sendMessage);
+
+  // Emit typing while composing (rate-limited)
+  let lastTyping = 0;
+  inputEl.addEventListener("input", () => {
+    const now = Date.now();
+    if (now - lastTyping > 500) {
+      socketio.emit("typing", {});
+      lastTyping = now;
+    }
+  });
+
+  // Copy deep link
+  copyBtn.addEventListener("click", async () => {
+    const url = `${location.origin}/r/{{ code }}`;
+    await navigator.clipboard.writeText(url);
+    alert("Room link copied!");
+  });
+
+  // Download log (JSON)
+  downloadBtn.addEventListener("click", () => {
+    const blob = new Blob([JSON.stringify(ALL, null, 2)], {type: "application/json"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `room-{{ code }}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
 </script>
 {% endblock %}
