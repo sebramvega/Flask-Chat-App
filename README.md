@@ -12,12 +12,14 @@ Users can create or join rooms via short codes and chat live with other particip
 ---
 
 ## 🚀 Features
-- **Create or join rooms** with unique 4-letter codes.
+- **Create or join rooms** with unique 4-letter codes (or share a deep link).
 - **Real-time messaging** powered by WebSockets.
-- **Message history** persists while the room is active.
-- **Presence notifications** when users join or leave.
+- **Live participant list** with join/leave notifications.
+- **Typing indicators** for active users.
+- **Message history** persists while the room is active; **downloadable as JSON**.
 - **Responsive dark theme UI** with message bubbles and sticky composer.
-- **Lightweight & self-contained** — no database required for demo.
+- **Lightweight & self-contained** — no external database required for demo.
+- **Basic anti-spam** throttling on the client and server.
 
 ---
 
@@ -36,6 +38,21 @@ Flask-Chat-App/
 ```
 
 ---
+
+## ✨ What’s New (v0.1)
+- Live participant list (presence) with user count
+- “Typing…” indicator
+- Deep-link join: `/r/<CODE>` and **Copy link** button in room
+- Download chat log (JSON) button
+- Lightweight client/server anti-spam
+- Dockerfile + Gunicorn (eventlet) for production-like WebSocket support
+
+## ▶️ Run with Docker
+```bash
+docker build -t flask-chat-app .
+docker run --rm -p 5000:5000 flask-chat-app
+# open http://127.0.0.1:5000
+```
 
 ## ⚡️ Getting Started
 
@@ -61,9 +78,16 @@ python-engineio>=4.9
 eventlet>=0.36   # optional, recommended for production
 ```
 
-### 3. Run the app
+### 3. Run the app (choose one)
+**Option A: Local (dev)**
 ```bash
 python main.py
+```
+
+**Option B: Docker (prod-like)**
+```bash
+docker build -t flask-chat-app .
+docker run --rm -p 5000:5000 flask-chat-app
 ```
 
 ### 4. Open the app
